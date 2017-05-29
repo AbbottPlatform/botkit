@@ -4,6 +4,7 @@
   "description": "Building blocks for Building Bots",
   "main": "lib/Botkit.js",
   "dependencies": {
+    "actions-on-google": "^1.1.1",
     "async": "^2.1.5",
     "back": "^1.0.1",
     "body-parser": "^1.17.1",
