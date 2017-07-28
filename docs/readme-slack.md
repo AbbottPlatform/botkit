@@ -22,7 +22,7 @@ Table of Contents
 ---
 ## Getting Started
 
-1) Install Botkit on your hosting platform of choice [more info here](readme.md#installation). 
+1) Install Botkit on your hosting platform of choice [more info here](readme.md#installation).
 
 2) First make a bot integration inside of your Slack channel. Go here:
 
@@ -39,7 +39,7 @@ Copy the API token that Slack gives you. You'll need it.
 4) Run the example bot app, using the token you just copied:
 ​
 ```
-token=REPLACE_THIS_WITH_YOUR_TOKEN node slack_bot.js
+token=REPLACE_THIS_WITH_YOUR_TOKEN node examples/slack_bot.js
 ```
 ​
 5) Your bot should be online! Within Slack, send it a quick direct message to say hello. It should say hello back!
@@ -913,9 +913,6 @@ The [Events API](https://api.slack.com/events-api) is a streamlined way to build
 
 During development, a tool such as [localtunnel.me](http://localtunnel.me) is useful for temporarily exposing a compatible webhook url to Slack while running Botkit privately.
 
-Note: Currently [presence](https://api.slack.com/docs/presence) is not supported by Slack Events API, so bot users will appear offline, but will still function normally.
-Developers may want to create an RTM connection in order to make the bot appear online - see note below.
-
 ### To get started with the Events API:
 
 1. Create a [Slack App](https://api.slack.com/apps/new)
@@ -949,7 +946,7 @@ controller.setupWebserver(process.env.port, function(err, webserver) {
             res.send('Success!');
         }
     });
-    
+
     // If not also opening an RTM connection
     controller.startTicking();
 });
@@ -985,6 +982,7 @@ var controller = Botkit.slackbot({
   * [Slack](readme-slack.md)
   * [Cisco Spark](readme-ciscospark.md)
   * [Facebook Messenger](readme-facebook.md)
+  * [Twilio SMS](readme-twiliosms.md)
   * [Twilio IPM](readme-twilioipm.md)
   * [Microsoft Bot Framework](readme-botframework.md)
 * Contributing to Botkit
