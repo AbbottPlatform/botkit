@@ -1,6 +1,6 @@
 {
   "name": "@abbott-platform/botkit",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Building blocks for Building Bots",
   "main": "lib/Botkit.js",
   "dependencies": {
