@@ -18,11 +18,13 @@ Table of Contents
 * [Working with Slack Custom Integrations](#working-with-slack-integrations)
 * [Using the Slack Button](#use-the-slack-button)
 * [Message Buttons](#message-buttons)
+* [Dialogs](#dialogs)
+* [Events API](#events-api)
 
 ---
 ## Getting Started
 
-1) Install Botkit on your hosting platform of choice [more info here](readme.md#installation). 
+1) Install Botkit on your hosting platform of choice [more info here](readme.md#installation).
 
 2) First make a bot integration inside of your Slack channel. Go here:
 
@@ -39,7 +41,7 @@ Copy the API token that Slack gives you. You'll need it.
 4) Run the example bot app, using the token you just copied:
 ​
 ```
-token=REPLACE_THIS_WITH_YOUR_TOKEN node slack_bot.js
+token=REPLACE_THIS_WITH_YOUR_TOKEN node examples/slack_bot.js
 ```
 ​
 5) Your bot should be online! Within Slack, send it a quick direct message to say hello. It should say hello back!
@@ -220,6 +222,77 @@ bot.startRTM(function(err, bot, payload) {
 setTimeout(bot.destroy.bind(bot), 10000)
 ```
 
+### Ephemeral Messages
+
+Using the Web API, messages can be sent to a user "ephemerally" which will only show to them, and no one else. Learn more about ephemeral messages at the [Slack API Documentation](https://api.slack.com/methods/chat.postEphemeral). When sending an ephemeral message, you must specify a valid `user` and `channel` id. Valid meaning the specified user is in the specified channel. Currently, updating interactive messages are not supported by ephemeral messages, but you can still create them and listen to the events. They will not have a reference to the original message, however.
+
+#### Ephemeral Message Authorship
+
+Slack allows you to post an ephemeral message as either the user you have an auth token for (would be your bot user in most cases), or as your app. The display name and icon will be different accordingly. The default is set to `as_user: true` for all functions except `bot.sendEphemeral()`. Override the default of any message by explicitly setting `as_user` on the outgoing message.
+
+
+#### bot.whisper()
+| Argument | Description
+|--- |---
+| src | Message object to reply to, **src.user is required**
+| message | _String_ or _Object_ Outgoing response
+| callback | _Optional_ Callback in the form function(err,response) { ... }
+
+Functions the same as `bot.reply()` but sends the message ephemerally. Note, src message must have a user field set in addition to a channel
+
+
+`bot.whisper()` defaults to `as_user: true` unless otherwise specified on the message object. This means messages will be attributed to your bot user, or whichever user who's token you are making the API call with.
+
+
+#### bot.sendEphemeral()
+| Argument | Description
+|--- |---
+| message | _String_ or _Object_ Outgoing response, **message.user is required**
+| callback | _Optional_ Callback in the form function(err,response) { ... }
+
+To send a spontaneous ephemeral message (which slack discourages you from doing) use `bot.sendEphemeral` which functions similarly as `bot.say()` and `bot.send()`
+
+
+```javascript
+controller.hears(['^spooky$'], function(bot, message) {
+	// default behavior, post as the bot user
+	bot.whisper(message, 'Booo! This message is ephemeral and private to you')
+})
+
+controller.hears(['^spaghetti$'], function(bot, message) {
+	// attribute slack message to app, not bot user
+	bot.whisper(message, {as_user: false, text: 'I may be a humble App, but I too love a good noodle'})
+})
+
+controller.on('custom_triggered_event', function(bot, trigger) {
+	// pretend to get a list of user ids from out analytics api...
+	fetch('users/champions', function(err, userArr) {
+		userArr.map(function(user) {
+			// iterate over every user and send them a message
+			bot.sendEphemeral({
+				channel: 'general',
+				user: user.id,
+				text: "Pssst! You my friend, are a true Bot Champion!"})
+		})
+	})
+})
+```
+
+#### Ephemeral Conversations
+
+To reply to a user ephemerally in a conversation, pass a message object to `convo.say()` `convo.sayFirst()` `convo.ask()` `convo.addMessage()` `convo.addQuestion()` that sets ephemeral to true.
+
+When using interactive message attachments with ephemeral messaging, Slack does not send the original message as part of the payload. With non-ephemeral interactive messages Slack sends a copy of the original message for you to edit and send back. To respond with an edited message when updating ephemeral interactive messages, you must construct a new message to send as the response, containing at least a text field.
+
+```javascript
+controller.hears(['^tell me a secret$'], 'direct_mention, ambient, mention', function(bot, message) {
+	bot.startConversation(message, function(err, convo) {
+		convo.say('Better take this private...')
+		convo.say({ ephemeral: true, text: 'These violent delights have violent ends' })
+	})
+})
+
+```
 
 ### Slack Threads
 
@@ -846,14 +919,8 @@ controller.on('interactive_message_callback', function(bot, message) {
 ### Using Interactive Messages in Conversations
 
 It is possible to use interactive messages in conversations, with the `convo.ask` function.
-In order to do this, you must instantiate your Botkit controller with the `interactive_replies` option set to `true`:
 
-```javascript
-var controller = Botkit.slackbot({interactive_replies: true});
-```
-
-This will cause Botkit to pass all interactive_message_callback messages into the normal conversation
-system. When used in conjunction with `convo.ask`, expect the response text to match the button `value` field.
+When used in conjunction with `convo.ask`, Botkit will treat the button's `value` field as if were a message typed by the user.
 
 ```javascript
 bot.startConversation(message, function(err, convo) {
@@ -906,15 +973,256 @@ bot.startConversation(message, function(err, convo) {
 });
 ```
 
+## Dialogs
+
+[Dialogs](https://api.slack.com/dialogs) allow bots to present multi-field pop-up forms in response to a button click or other interactive message interaction.
+Botkit provides helper functions and special events to make using dialogs in your app possible.
+
+### Create a dialogs
+
+Dialogs can be created in response to `interactive_message_callback` or `slash_command` events.
+Botkit provides a specialized reply function, `bot.replyWithDialog()` and an object builder function,
+`bot.createDialog()` that should be used to create and send the dialog.
+
+#### bot.createDialog()
+| Argument | Description
+|---  |---
+| title | title of dialog
+| callback_id | value for the callback_id field, used to identify the form
+| submit_label | the label for the submit button.
+| elements | an optional array of pre-specified [elements objects](https://api.slack.com/dialogs#elements)
+
+This function returns an `dialog object` with additional methods for creating the form elements,
+and using them with `bot.replyWithDialog`.  These functions can be chained together.
+
+
+```javascript
+var dialog = bot.createDialog(
+         'Title of dialog',
+         'callback_id',
+         'Submit'
+       ).addText('Text','text','some text')
+        .addSelect('Select','select',null,[{label:'Foo',value:'foo'},{label:'Bar',value:'bar'}],{placeholder: 'Select One'})
+        .addTextarea('Textarea','textarea','some longer text',{placeholder: 'Put words here'})
+        .addUrl('Website','url','http://botkit.ai');
+
+bot.replyWithDialog(message, dialog.asObject());
+```
+
+##### dialog.title()
+| Argument | Description
+|---  |---
+| value | value for the dialog title
+
+##### dialog.callback_id()
+| Argument | Description
+|---  |---
+| value | value for the dialog title
+
+##### dialog.submit_label()
+| Argument | Description
+|---  |---
+| value | value for the dialog title
+
+##### dialog.addText()
+| Argument | Description
+|---  |---
+| label | label of field
+| name | name of field
+| value | optional value
+| options | an object defining additional parameters for this elements
+
+Add a one-line text element to the dialog. The `options` object can contain [any of the parameters listed in Slack's documentation for this element](https://api.slack.com/dialogs),
+including `placeholder`, `optional`, `min_length` and `max_length`
+
+##### dialog.addEmail()
+| Argument | Description
+|---  |---
+| label | label of field
+| name | name of field
+| value | optional value
+| options | an object defining additional parameters for this elements
+
+Add a one-line email address element to the dialog. The `options` object can contain [any of the parameters listed in Slack's documentation for this element](https://api.slack.com/dialogs),
+including `placeholder`, `optional`, `min_length` and `max_length`
+
+##### dialog.addNumber()
+| Argument | Description
+|---  |---
+| label | label of field
+| name | name of field
+| value | optional value
+| options | an object defining additional parameters for this elements
+
+Add a one-line number element to the dialog. The `options` object can contain [any of the parameters listed in Slack's documentation for this element](https://api.slack.com/dialogs),
+including `placeholder`, `optional`, `min_length` and `max_length`
+
+##### dialog.addTel()
+| Argument | Description
+|---  |---
+| label | label of field
+| name | name of field
+| value | optional value
+| options | an object defining additional parameters for this elements
+
+Add a one-line telephone number element to the dialog. The `options` object can contain [any of the parameters listed in Slack's documentation for this element](https://api.slack.com/dialogs),
+including `placeholder`, `optional`, `min_length` and `max_length`
+
+##### dialog.addUrl()
+| Argument | Description
+|---  |---
+| label | label of field
+| name | name of field
+| value | optional value
+| options | an object defining additional parameters for this elements
+
+Add a one-line url element to the dialog. The `options` object can contain [any of the parameters listed in Slack's documentation for this element](https://api.slack.com/dialogs),
+including `placeholder`, `optional`, `min_length` and `max_length`
+
+##### dialog.addTextarea()
+| Argument | Description
+|---  |---
+| label | label of field
+| name | name of field
+| value | optional value
+| options | an object defining additional parameters for this elements
+| subtype | optional: can be email, url, tel, number or text
+
+Add a one-line text element to the dialog. The `options` object can contain [any of the parameters listed in Slack's documentation for this element](https://api.slack.com/dialogs),
+including `placeholder`, `optional`, `min_length` and `max_length`
+
+##### dialog.addSelect()
+| Argument | Description
+|---  |---
+| label | label of field
+| name | name of field
+| value | optional value
+| option_list | an array of option objects in the form [{label:, value:}]
+| options | an object defining additional parameters for this elements
+| subtype | optional: can be email, url, tel, number or text
+
+Add a one-line text element to the dialog. The `options` object can contain [any of the parameters listed in Slack's documentation for this element](https://api.slack.com/dialogs),
+including `placeholder` and `optional`
+
+##### dialog.toObject()
+
+Return the dialog as a Javascript object
+
+##### dialog.asString()
+
+Return the dialog as JSON
+
+#### bot.replyWithDialog
+| Argument | Description
+|---  |---
+| src | incoming `interactive_message_callback` or `slash_command` event
+| dialog | a dialog object, created by `bot.createDialog().toObject()` or defined to Slack's spec
+
+Sends a dialog in response to a button click or slash command. The dialog will appear in Slack as a popup window.
+This function uses the API call `bot.api.dialog.open` to actually deliver the dialog.
+
+```javascript
+// launch a dialog from a button click
+controller.on('interactive_message_callback', function(bot, trigger) {
+
+  // is the name of the clicked button "dialog?"
+  if (trigger.actions[0].name.match(/^dialog/)) {
+
+        var dialog =bot.createDialog(
+              'Title of dialog',
+              'callback_id',
+              'Submit'
+            ).addText('Text','text','some text')
+              .addSelect('Select','select',null,[{label:'Foo',value:'foo'},{label:'Bar',value:'bar'}],{placeholder: 'Select One'})
+             .addTextarea('Textarea','textarea','some longer text',{placeholder: 'Put words here'})
+             .addUrl('Website','url','http://botkit.ai');
+
+
+        bot.replyWithDialog(trigger, dialog.asObject(), function(err, res) {
+          // handle your errors!
+        });
+
+    }
+
+});
+```
+
+
+### Receive Dialog Submissions
+
+When a user in Slack submits a dialog, your bot will receive a `dialog_submission` event
+which can be handled using standard `controller.on('dialog_submission', function handler(bot, message) {})` format.
+
+The form submission values can be found in the `message.submission` field, which is an object containing
+key value pairs that match the fields specified in the dialog.
+In addition, the message will have a `message.callback_id` field which identifies the form.
+
+Slack recommends an additional layer of server-side validation of the values in `message.submission`.
+To respond with an error, use `bot.dialogError()`
+
+Otherwise, you must call `bot.dialogOk()` to tell Slack that the submission has been successfully received by your app.
+They also recommend that the bot respond in some other way, such as sending a follow-up message. You can use
+the normal `bot.reply` or `bot.whisper` functions to send such a message.
+
+In the example below, we define a `receive middleware` that performs additional validation on the submission.
+
+```javascript
+// use a receive middleware hook to validate a form submission
+// and use bot.dialogError to respond with an error before the submission
+// can be sent to the handler
+controller.middleware.receive.use(function validateDialog(bot, message, next) {
+
+
+  if (message.type=='dialog_submission') {
+
+    if (message.submission.number > 100) {
+       bot.dialogError({
+          "name":"number",
+          "error":"Please specify a value below 100"
+          });            
+      return;
+    }
+  }
+
+  next();
+
+});
+
+
+// handle a dialog submission
+// the values from the form are in event.submission    
+  controller.on('dialog_submission', function(bot, message) {
+    var submission = message.submission;
+    bot.reply(message, 'Got it!');
+
+    // call dialogOk or else Slack will think this is an error
+    bot.dialogOk();
+});
+```
+
+#### bot.dialogOk()
+
+Send a success acknowledgement back to Slack. You _must_ call either dialogOk() or dialogError() in response to `dialog_submission` events,
+otherwise Slack will display an error and will appear to reject the form submission.
+
+#### bot.dialogError()
+| Argument | Description
+|---  |---
+| error | a single error object {name:, error:} or an array of error objects
+
+Send one or more validation errors back to Slack to display in the dialog.
+The parameter can be one or more objects, where the `name` field matches the
+name of the field in which the error is present.
+
+
+
+
 
 ## Events API
 
 The [Events API](https://api.slack.com/events-api) is a streamlined way to build apps and bots that respond to activities in Slack. You must setup a [Slack App](https://api.slack.com/slack-apps) to use Events API. Slack events are delivered to a secure webhook, and allows you to connect to slack without the RTM websocket connection.
 
 During development, a tool such as [localtunnel.me](http://localtunnel.me) is useful for temporarily exposing a compatible webhook url to Slack while running Botkit privately.
-
-Note: Currently [presence](https://api.slack.com/docs/presence) is not supported by Slack Events API, so bot users will appear offline, but will still function normally.
-Developers may want to create an RTM connection in order to make the bot appear online - see note below.
 
 ### To get started with the Events API:
 
@@ -949,7 +1257,7 @@ controller.setupWebserver(process.env.port, function(err, webserver) {
             res.send('Success!');
         }
     });
-    
+
     // If not also opening an RTM connection
     controller.startTicking();
 });
@@ -971,20 +1279,22 @@ var controller = Botkit.slackbot({
 });
 ```
 
-
-## Documentation
+## Botkit Documentation Index
 
 * [Get Started](readme.md)
 * [Botkit Studio API](readme-studio.md)
 * [Function index](readme.md#developing-with-botkit)
 * [Extending Botkit with Plugins and Middleware](middleware.md)
+  * [Message Pipeline](readme-pipeline.md)
   * [List of current plugins](readme-middlewares.md)
 * [Storing Information](storage.md)
 * [Logging](logging.md)
 * Platforms
   * [Slack](readme-slack.md)
   * [Cisco Spark](readme-ciscospark.md)
+  * [Microsoft Teams](readme-teams.md)
   * [Facebook Messenger](readme-facebook.md)
+  * [Twilio SMS](readme-twiliosms.md)
   * [Twilio IPM](readme-twilioipm.md)
   * [Microsoft Bot Framework](readme-botframework.md)
 * Contributing to Botkit

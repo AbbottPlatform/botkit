@@ -53,7 +53,7 @@ This bot demonstrates many of the core features of Botkit:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-var Botkit = require('../lib/Botkit.js');
+var Botkit = require('../../lib/Botkit.js');
 
 
 if (!process.env.token) {
@@ -64,6 +64,7 @@ if (!process.env.token) {
 var controller = Botkit.slackbot({
  debug: false
 });
+
 
 controller.spawn({
   token: process.env.token

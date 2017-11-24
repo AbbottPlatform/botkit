@@ -64,7 +64,7 @@ This bot demonstrates many of the core features of Botkit:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 
-var Botkit = require('./lib/Botkit.js');
+var Botkit = require('../lib/Botkit.js');
 var os = require('os');
 var commandLineArgs = require('command-line-args');
 var localtunnel = require('localtunnel');
@@ -90,6 +90,8 @@ var bot = controller.spawn({
     appId: process.env.app_id,
     appPassword: process.env.app_password
 });
+
+
 
 controller.setupWebserver(process.env.port || 3000, function(err, webserver) {
     controller.createWebhookEndpoints(webserver, bot, function() {
@@ -119,7 +121,10 @@ controller.hears(['hello', 'hi'], 'message_received', function(bot, message) {
         if (user && user.name) {
             bot.reply(message, 'Hello ' + user.name + '!!');
         } else {
-            bot.reply(message, 'Hello.');
+            bot.reply(message, 'Hello.', function(err) {
+
+              console.error(err);
+            });
         }
     });
 });

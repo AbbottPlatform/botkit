@@ -1,6 +1,6 @@
 # Configure Botkit and the Slack Events API
 
-Building a bot with Botkit and the Slack Events API gives you access to all of the best tools and options available to createe a feature-rich bot for Slack.
+Building a bot with Botkit and the Slack Events API gives you access to all of the best tools and options available to create a feature-rich bot for Slack.
 
 In order to get everything set up, you will need to configure a new Slack App inside the [Slack Developer Portal](http://api.slack.com/apps), and at the same time, configure a [Botkit-powered bot](http://botkit.ai). It only takes a few moments, but there are a bunch of steps, so follow these instructions carefully. 
 
@@ -40,9 +40,9 @@ Click on the "Bot Users" tab and specify a name for your bot. This is the name t
 
 In addition to a name, enable the option for "Always Show My Bot Online." This will ensure your Bot appears online to your team.
 
-## 5. Set up Interactive Messages
+## 5. Set up Interactive Components
 
-"Interactive messages" is Slack's fancy way of saying "buttons." In order to enable buttons, under Request URL, add `https://YOURURL/slack/receive`, then click save.
+"Interactive Components" is Slack's fancy way of saying "buttons, or dialogs, or menus." In order to enable these, under Request URL, add `https://YOURURL/slack/receive`, then click save.
 
 ![Setup Interactive images](IMG/slack-im.png)
 

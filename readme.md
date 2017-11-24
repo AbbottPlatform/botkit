@@ -23,7 +23,9 @@ Botkit features a comprehensive set of tools to deal with popular messaging plat
 
 * [Slack](docs/readme-slack.md)
 * [Cisco Spark](docs/readme-ciscospark.md)
+* [Microsoft Teams](docs/readme-teams.md)
 * [Facebook Messenger and Facebook @Workplace](docs/readme-facebook.md)
+* [Twilio SMS Messaging](docs/readme-twiliosms.md)
 * [Twilio IP Messaging](docs/readme-twilioipm.md)
 * [Microsoft Bot Framework](docs/readme-botframework.md)
 * Yours? [info@howdy.ai](mailto:info@howdy.ai)
@@ -62,29 +64,64 @@ Note: While [using Botkit Studio](https://studio.botkit.ai) is highly recommende
 > ### [Slack Bot Starter Kit](https://github.com/howdyai/botkit-starter-slack)
 > The Slack starter kit contains everything you need to create a multi-team Slack application,
 suitable for internal use or submission to [Slack's app store.](https://slack.com/apps)
-> #### [![Remix on Glitch](docs/glitch.png)](https://glitch.com/edit/#!/import/github/howdyai/botkit-starter-slack)
+> #### [![Remix on Glitch](docs/glitch.png)](https://glitch.com/~botkit-slack)
 
 > ### [Cisco Spark Bot Starter Kit](https://github.com/howdyai/botkit-starter-ciscospark)
 > Build a bot inside Cisco Spark's collaboration and messaging platform. Bots built with the starter kit
 are ready to submit to [Cisco Spark's Depot app store](https://depot.ciscospark.com/).
-> #### [![Remix on Glitch](docs/glitch.png)](https://glitch.com/edit/#!/import/github/howdyai/botkit-starter-ciscospark)
+> #### [![Remix on Glitch](docs/glitch.png)](https://glitch.com/~botkit-ciscospark)
+
+> ### [Microsoft Teams Bot Starter Kit](https://github.com/howdyai/botkit-starter-teams)
+> Connect your bot to Microsoft Teams, and it can do things like no other bot, like create tabs, compose extensions, and other deep integrations into the messaging UI.
+> #### [![Remix on Glitch](docs/glitch.png)](https://glitch.com/~botkit-teams)
 
 > ### [Facebook Bot Starter Kit](https://github.com/howdyai/botkit-starter-facebook)
 > The Facebook starter kit contains all the code necessary to stand up a Facebook bot on either Facebook Messenger, or Facebook Work Chat. With just a few pieces of configuration, set up a bot that automatically responds to messages sent to your Facebook page.
-> #### [![Remix on Glitch](docs/glitch.png)](https://glitch.com/edit/#!/import/github/howdyai/botkit-starter-facebook)
+> #### [![Remix on Glitch](docs/glitch.png)](https://glitch.com/~botkit-facebook)
+
+## Install Botkit from NPM or Github
+
+Botkit is available via NPM. We recommend installing the Botkit command line tool, which will automate many of the follow-up steps!
+
+```bash
+npm install -g botkit
+botkit new --name "workbot9000"
+```
+
+To install Botkit as a dependency into an existing node project:
+
+```bash
+npm install --save botkit
+```
+
+You can also check out Botkit directly from Git.
+If you want to use the example code and included bots, it may be preferable to use Github over NPM.
+
+```bash
+git clone git@github.com:howdyai/botkit.git
+```
+
+After cloning the Git repository, you have to install the node dependencies. Navigate to the root of your cloned repository and use npm to install all necessary dependencies.
+```bash
+npm install
+```
+
+Use the `--production` flag to skip the installation of devDependencies from Botkit. Useful if you just wish to run the example bot.
+```bash
+npm install --production
+```
 
 # Developer & Support Community
 
 Join our thriving community of Botkit developers and bot enthusiasts at large.
-Over 4500 members strong, [our open Slack group](http://community.botkit.ai) is
+Over 4500 members strong, [our open Slack group](https://community.botkit.ai) is
 _the place_ for people interested in the art and science of making bots.
 Come to ask questions, share your progress, and commune with your peers!
 
 You can also find help from members of the Botkit team [in our dedicated Cisco Spark room](https://eurl.io/#SyNZuomKx)!
 
-We also host a [regular meetup and annual conference called TALKABOT.](http://talkabot.ai)
+We also host a [regular meetup and annual conference called TALKABOT.](https://talkabot.ai)
 Come meet and learn from other bot developers! [Full video of our 2016 event is available on Youtube.](https://www.youtube.com/playlist?list=PLD3JNfKLDs7WsEHSal2cfwG0Fex7A6aok)
-
 
 
 # Botkit Core Library
@@ -115,29 +152,25 @@ under the [MIT open source license](LICENSE.md), which means developers are free
 in any type of project.
 
 
-## Install Botkit from NPM or Github
+## Running Tests
 
-Botkit is available via NPM.
+To run tests, use the npm `test` command. Note: you will need dev dependencies installed using `npm install`.
 
 ```bash
-npm install --save botkit
+npm test
 ```
 
-You can also check out Botkit directly from Git.
-If you want to use the example code and included bots, it may be preferable to use Github over NPM.
+To run tests in watch mode run:
 
 ```bash
-git clone git@github.com:howdyai/botkit.git
+npm run test-watch
 ```
 
-After cloning the Git repository, you have to install the node dependencies. Navigate to the root of your cloned repository and use npm to install all necessary dependencies.
-```bash
-npm install
-```
+Tests are run with [Jest](https://facebook.github.io/jest/docs/getting-started.html). You can pass Jest command line options after a `--`.
+For example to have Jest bail on the first error you can run
 
-Use the `--production` flag to skip the installation of devDependencies from Botkit. Useful if you just wish to run the example bot.
 ```bash
-npm install --production
+npm test -- --bail
 ```
 
 ## Documentation
@@ -146,13 +179,16 @@ npm install --production
 * [Botkit Studio API](docs/readme-studio.md)
 * [Function index](docs/readme.md#developing-with-botkit)
 * [Extending Botkit with Plugins and Middleware](docs/middleware.md)
+  * [Message Pipeline](docs/readme-pipeline.md)
   * [List of current plugins](docs/readme-middlewares.md)
 * [Storing Information](docs/storage.md)
 * [Logging](docs/logging.md)
 * Platforms
   * [Slack](docs/readme-slack.md)
   * [Cisco Spark](docs/readme-ciscospark.md)
+  * [Microsoft Teams](docs/readme-teams.md)
   * [Facebook Messenger](docs/readme-facebook.md)
+  * [Twilio SMS](docs/readme-twiliosms.md)
   * [Twilio IPM](docs/readme-twilioipm.md)
   * [Microsoft Bot Framework](docs/readme-botframework.md)
 * Contributing to Botkit
